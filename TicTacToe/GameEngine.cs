@@ -45,9 +45,6 @@ namespace TicTacToe
             {
                 int X = i / 3;
                 int Y = i % 3;
-                if (genesDict.ContainsKey(i))
-                {
-                }
                 genesDict.Add(i, new Location(X, Y));
             }
 
@@ -56,6 +53,7 @@ namespace TicTacToe
             Player player2 = MoveFirst ? new Player(ComputerPlayerName, Game.Chess.X) : new Player(GAPlayerName, Game.Chess.X);
             for (int i = 0; i < SimulateRound; i++)
             {
+                rng = new Random();
                 Game game = new Game(BoardSize, WinningCondition, player1, player2);
                 List<Move> availableMoves;
                 while (game.States == Game.GameStates.Playing)
@@ -78,14 +76,7 @@ namespace TicTacToe
                     }
                     else if (game.CurrentPlayer.Name == ComputerPlayerName)
                     {
-                        double rd = rng.NextDouble();
-                        double fd = Math.Ceiling(rd * (availableMoves.Count));
-                        int ri = (int)fd;
-                        if (ri == 0)
-                        {
-                        }
-
-                        move = availableMoves[ri];
+                        move = availableMoves[rng.Next(0, availableMoves.Count - 1)];
                     }
                     else
                     {
