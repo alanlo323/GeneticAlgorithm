@@ -9,6 +9,10 @@ using GeneticSharp.Domain.Selections;
 using GeneticSharp.Domain.Terminations;
 using GeneticSharp.Infrastructure.Framework.Threading;
 using System;
+using System.IO;
+using Newtonsoft.Json;
+using GeneticSharp.Domain.Chromosomes;
+using JsonNet.ContractResolvers;
 
 namespace GAConsoleApp
 {
@@ -49,14 +53,32 @@ namespace GAConsoleApp
         /// </summary>
         private static void Main(string[] args)
         {
-            IGameEngine game = new GameEngine(true);
+            string TicTacToeMoveFirstChromosomeFileName = "TicTacToeMoveFirstChromosomeFileName.json";
+
+            IGameEngine game = new GameEngine(true, simulateRound: 1000);
 
             var selection = new StochasticUniversalSamplingSelection();
             var crossover = new UniformCrossover(0.8f);
             var mutation = new UniformMutation(true);
 
             var fitness = new CustomFitness(game);
-            var chromosome = new CustomChromosome(game);
+            IChromosome chromosome;
+            if (File.Exists(TicTacToeMoveFirstChromosomeFileName))
+            {
+                var settings = new JsonSerializerSettings
+                {
+                    ContractResolver = new PrivateSetterContractResolver()
+                };
+                chromosome = JsonConvert.DeserializeObject<CustomChromosome>(File.ReadAllText(TicTacToeMoveFirstChromosomeFileName), settings);
+                if (chromosome is CustomChromosome customChromosome)
+                {
+                    customChromosome.Reference = game;
+                }
+            }
+            else
+            {
+                chromosome = new CustomChromosome(game);
+            }
 
             var population = new Population(50, 70, chromosome);
             population.GenerationStrategy = new PerformanceGenerationStrategy();
@@ -70,7 +92,7 @@ namespace GAConsoleApp
                     new FitnessThresholdTermination(1f),
                 new FitnessStagnationTermination(100),
                 }),
-                new TimeEvolvingTermination(TimeSpan.FromMinutes(10)),
+                new TimeEvolvingTermination(TimeSpan.FromSeconds(10)),
             });
             ga.MutationProbability = 0.1f;
             var lastMsgTick = DateTime.Now;
@@ -86,8 +108,8 @@ namespace GAConsoleApp
             };
             ga.TaskExecutor = new ParallelTaskExecutor
             {
-                MinThreads = 8,
-                MaxThreads = 8
+                MinThreads = 32,
+                MaxThreads = 32
             };
 
             Console.WriteLine("GA running...");
@@ -96,6 +118,9 @@ namespace GAConsoleApp
             Console.WriteLine();
             Console.WriteLine($"Best solution found has fitness: {ga.BestChromosome.Fitness}");
             Console.WriteLine($"Elapsed time: {ga.TimeEvolving}");
+
+            File.WriteAllText(TicTacToeMoveFirstChromosomeFileName, JsonConvert.SerializeObject(ga.BestChromosome));
+            Console.WriteLine($"Saved best solution to {TicTacToeMoveFirstChromosomeFileName}");
             Console.ReadKey();
         }
     }

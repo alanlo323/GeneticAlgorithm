@@ -1,10 +1,21 @@
-﻿using GeneticAlgorithm.Engine;
+﻿using System.Linq;
+using GeneticAlgorithm.Engine;
 using GeneticSharp.Domain.Chromosomes;
+using Newtonsoft.Json;
 
 namespace GAConsoleApp
 {
-    internal class CustomChromosome : ChromosomeBase
+    public class CustomChromosome : ChromosomeBase
     {
+        public CustomChromosome(Gene[] genes, in IGeneable reference) : this(reference)
+        {
+            ReplaceGenes(0, genes);
+        }
+
+        public CustomChromosome() : base(GenesCount)
+        {
+        }
+
         public CustomChromosome(in IGeneable reference)
             : base(GenesCount)
         {
@@ -12,14 +23,22 @@ namespace GAConsoleApp
             CreateGenes();
         }
 
+        public Gene[] Genes { get => GetGenes(); set => ReplaceGenes(0, value); }
+
         public static int GenesCount { get; } = 9;
 
-        public IGeneable Reference { get; }
+        [JsonIgnore]
+        public IGeneable Reference { get; set; }
 
         public override IChromosome CreateNew()
         {
             var reference = Reference;
-            return new CustomChromosome(in reference);
+            Gene[] genes = GetGenes();
+            if (genes == null || genes.Length == 0 || genes.All(x => x.Value == null))
+            {
+                return new CustomChromosome(in reference);
+            }
+            return new CustomChromosome(Genes, in reference);
         }
 
         public override Gene GenerateGene(int geneIndex)
