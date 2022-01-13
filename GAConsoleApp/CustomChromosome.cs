@@ -1,4 +1,4 @@
-﻿using GAConsoleApp.GameEngine;
+﻿using GeneticAlgorithm.Engine;
 using GeneticSharp.Domain.Chromosomes;
 
 namespace GAConsoleApp

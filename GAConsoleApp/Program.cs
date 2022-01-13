@@ -1,4 +1,5 @@
-﻿using GAConsoleApp.Test.GameEngine;
+﻿using TicTacToe;
+using GeneticAlgorithm.Engine;
 using GeneticSharp.Domain;
 using GeneticSharp.Domain.Crossovers;
 using GeneticSharp.Domain.Mutations;
@@ -48,7 +49,7 @@ namespace GAConsoleApp
         /// </summary>
         private static void Main(string[] args)
         {
-            var game = new MostClosedNumber();
+            IGameEngine game = new GameEngine(true);
 
             var selection = new StochasticUniversalSamplingSelection();
             var crossover = new UniformCrossover(0.8f);
@@ -60,15 +61,18 @@ namespace GAConsoleApp
             var population = new Population(50, 70, chromosome);
             population.GenerationStrategy = new PerformanceGenerationStrategy();
 
-            var ga = new GeneticAlgorithm(population, fitness, selection, crossover, mutation);
+            var ga = new GeneticSharp.Domain.GeneticAlgorithm(population, fitness, selection, crossover, mutation);
             ga.Reinsertion = new ElitistReinsertion();
-            ga.Termination = new OrTermination(new TerminationBase[]
+            ga.Termination = new OrTermination(new ITermination[]
             {
-                new FitnessThresholdTermination(1f),
-                new TimeEvolvingTermination(TimeSpan.FromSeconds(3000)),
-                //new FitnessStagnationTermination(2500)
+                new AndTermination(new  ITermination[]
+                {
+                    new FitnessThresholdTermination(1f),
+                new FitnessStagnationTermination(100),
+                }),
+                new TimeEvolvingTermination(TimeSpan.FromMinutes(10)),
             });
-            ga.MutationProbability = 0.0001f;
+            ga.MutationProbability = 0.1f;
             var lastMsgTick = DateTime.Now;
             ga.GenerationRan += (s, e) =>
             {
@@ -82,8 +86,8 @@ namespace GAConsoleApp
             };
             ga.TaskExecutor = new ParallelTaskExecutor
             {
-                MinThreads = 16,
-                MaxThreads = 16
+                MinThreads = 8,
+                MaxThreads = 8
             };
 
             Console.WriteLine("GA running...");

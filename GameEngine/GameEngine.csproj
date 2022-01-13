@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GAConsoleApp\GAConsoleApp.csproj" />
+    <PackageReference Include="GeneticSharp.Extensions" Version="2.6.0" />
   </ItemGroup>
 
 </Project>

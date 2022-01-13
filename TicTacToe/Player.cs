@@ -1,6 +1,6 @@
-﻿using static GameEngine_TicTacToe.Game;
+﻿using static TicTacToe.Game;
 
-namespace GameEngine_TicTacToe
+namespace TicTacToe
 {
     public class Player
     {
@@ -12,5 +12,10 @@ namespace GameEngine_TicTacToe
 
         public Chess Chess { get; set; }
         public string Name { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Chess}";
+        }
     }
 }

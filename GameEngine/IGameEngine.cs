@@ -1,6 +1,6 @@
 ﻿using GeneticSharp.Domain.Chromosomes;
 
-namespace GAConsoleApp.GameEngine
+namespace GeneticAlgorithm.Engine
 {
     public interface IFitnessable
     {

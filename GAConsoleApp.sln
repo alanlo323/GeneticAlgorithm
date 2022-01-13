@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31911.196
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GAConsoleApp", ".\GAConsoleApp\GAConsoleApp.csproj", "{3AA15BBD-3196-436E-A704-585BAA4B048A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GAConsoleApp", "GAConsoleApp\GAConsoleApp.csproj", "{3AA15BBD-3196-436E-A704-585BAA4B048A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ML", ".\ML\ML.csproj", "{87DA3F36-837F-489C-80CC-2A39AD089082}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TicTacToe", "TicTacToe\TicTacToe.csproj", "{7706F6C3-141C-48B0-B640-3FD7BC07F154}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameEngine_TicTacToe", ".\GameEngine_TicTacToe\GameEngine_TicTacToe.csproj", "{7706F6C3-141C-48B0-B640-3FD7BC07F154}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameEngine", "GameEngine\GameEngine.csproj", "{BEF61C12-9C6A-44A0-8E9C-533FAE003C66}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,14 +19,14 @@ Global
 		{3AA15BBD-3196-436E-A704-585BAA4B048A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3AA15BBD-3196-436E-A704-585BAA4B048A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3AA15BBD-3196-436E-A704-585BAA4B048A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{87DA3F36-837F-489C-80CC-2A39AD089082}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{87DA3F36-837F-489C-80CC-2A39AD089082}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{87DA3F36-837F-489C-80CC-2A39AD089082}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{87DA3F36-837F-489C-80CC-2A39AD089082}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7706F6C3-141C-48B0-B640-3FD7BC07F154}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7706F6C3-141C-48B0-B640-3FD7BC07F154}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7706F6C3-141C-48B0-B640-3FD7BC07F154}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7706F6C3-141C-48B0-B640-3FD7BC07F154}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BEF61C12-9C6A-44A0-8E9C-533FAE003C66}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BEF61C12-9C6A-44A0-8E9C-533FAE003C66}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BEF61C12-9C6A-44A0-8E9C-533FAE003C66}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BEF61C12-9C6A-44A0-8E9C-533FAE003C66}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

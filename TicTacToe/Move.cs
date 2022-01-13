@@ -1,4 +1,4 @@
-﻿namespace GameEngine_TicTacToe
+﻿namespace TicTacToe
 {
     public class Move
     {
@@ -10,5 +10,10 @@
 
         public Location Location { get; set; }
         public Player Player { get; private set; }
+
+        public override string ToString()
+        {
+            return $"[{Player.Chess}] {Location.X}:{Location.Y}";
+        }
     }
 }

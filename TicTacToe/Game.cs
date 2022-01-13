@@ -1,8 +1,9 @@
-﻿using GAConsoleApp.GameEngine;
-using GeneticSharp.Domain.Chromosomes;
+﻿using GeneticSharp.Domain.Chromosomes;
+using System;
 using System.Collections.Generic;
+using System.Text;
 
-namespace GameEngine_TicTacToe
+namespace TicTacToe
 {
     public class Game
     {
@@ -79,7 +80,7 @@ namespace GameEngine_TicTacToe
                     Location location = new Location(x, y);
                     if (IsLocationAvailable(location))
                     {
-                        availableMoves.Add(new Move(GetNextPlayer(), new Location(x, y)));
+                        availableMoves.Add(new Move(CurrentPlayer, new Location(x, y)));
                     }
                 }
             }
@@ -187,6 +188,11 @@ namespace GameEngine_TicTacToe
 
         public bool PlaceMovement(Move move)
         {
+            if (move == null)
+            {
+                throw new ArgumentNullException("move");
+            }
+
             if (States == GameStates.Playing && IsLocationAvailable(move.Location))
             {
                 Board[move.Location.X, move.Location.Y] = CurrentPlayer;
@@ -199,6 +205,23 @@ namespace GameEngine_TicTacToe
             }
 
             return false;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            for (int y = 0; y < Board.GetLength(1); y++)
+            {
+                for (int x = 0; x < Board.GetLength(0); x++)
+                {
+                    sb.Append(Board[x, y].Chess);
+                }
+                if (y < Board.GetLength(1) - 1)
+                {
+                    sb.Append(Environment.NewLine);
+                }
+            }
+            return base.ToString();
         }
     }
 }
