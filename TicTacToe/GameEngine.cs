@@ -23,13 +23,15 @@ namespace TicTacToe
             WinScore = winScore;
             TieScore = tieScore;
 
-            rng = new Random();
+            rng = new();
             ComputerPlayerName = "Computer";
             GAPlayerName = "GeneticAlgorithm";
         }
 
         public int BoardSize { get; set; }
+        public IChromosome ComputerChromosome { get; set; }
         public string ComputerPlayerName { get; private set; }
+        public GeneticSharp.Domain.GeneticAlgorithm GA { get; set; }
         public string GAPlayerName { get; private set; }
         public bool MoveFirst { get; private set; }
         public int SimulateRound { get; private set; }
@@ -37,46 +39,48 @@ namespace TicTacToe
         public int WinningCondition { get; private set; }
         public int WinScore { get; private set; }
 
-        public double Evaluate(IChromosome chromosome)
+        public static Dictionary<Location, Gene> MapGenesToLocation(Gene[] genes)
         {
-            var genes = chromosome.GetGenes();
-            Dictionary<int, Location> genesDict = new Dictionary<int, Location>();
+            if (genes == null)
+            {
+                throw new ArgumentNullException(nameof(genes));
+            }
+
+            Dictionary<Location, Gene> genesDict = new();
             for (int i = 0; i < genes.Length; i++)
             {
                 int X = i / 3;
                 int Y = i % 3;
-                genesDict.Add(i, new Location(X, Y));
+                genesDict.Add(new(X, Y), genes[i]);
             }
 
+            return genesDict;
+        }
+
+        public double Evaluate(IChromosome chromosome)
+        {
             int scores = 0;
-            Player player1 = MoveFirst ? new Player(GAPlayerName, Game.Chess.O) : new Player(ComputerPlayerName, Game.Chess.O);
-            Player player2 = MoveFirst ? new Player(ComputerPlayerName, Game.Chess.X) : new Player(GAPlayerName, Game.Chess.X);
+            Player player1 = MoveFirst ? new(GAPlayerName, Game.Chess.O) : new(ComputerPlayerName, Game.Chess.O);
+            Player player2 = MoveFirst ? new(ComputerPlayerName, Game.Chess.X) : new(GAPlayerName, Game.Chess.X);
             for (int i = 0; i < SimulateRound; i++)
             {
-                rng = new Random();
-                Game game = new Game(BoardSize, WinningCondition, player1, player2);
+                rng = new();
+                Game game = new(BoardSize, WinningCondition, player1, player2);
                 List<Move> availableMoves;
                 while (game.States == Game.GameStates.Playing)
                 {
-                    Move move = null;
                     availableMoves = game.GetAvailableMoves();
 
+                    Move move;
                     if (game.CurrentPlayer.Name == GAPlayerName)
                     {
-                        var availableMoveDict = new Dictionary<int, Move>();
-                        foreach (var item in genesDict)
-                        {
-                            var availableMove = availableMoves.Where(x => x.Location.Equals(item.Value)).FirstOrDefault();
-                            if (availableMove != null)
-                            {
-                                availableMoveDict.Add(item.Key, availableMove);
-                            }
-                        }
-                        move = availableMoveDict.RandomElementByWeight((x => (double)genes[x.Key].Value)).Value;
+                        move = GetNextAIMove(game, chromosome);
                     }
                     else if (game.CurrentPlayer.Name == ComputerPlayerName)
                     {
-                        move = availableMoves[rng.Next(0, availableMoves.Count - 1)];
+                        //move = availableMoves[rng.Next(0, availableMoves.Count - 1)];
+                        //move = GetNextAIMove(game, ComputerChromosome);
+                        move = GetHardCodedNextMove(game);
                     }
                     else
                     {
@@ -110,6 +114,200 @@ namespace TicTacToe
             //{
             //    GenerateGene(geneIndex + 1);
             //}
+        }
+
+        public Move GetHardCodedNextMove(Game game)
+        {
+            var board = game.Board;
+            var me = game.CurrentPlayer.Chess;
+            var op = game.GetNextPlayer().Chess;
+
+            #region Check -1
+
+            int score = 0;
+            Location targetLocation = null;
+
+            #region Vertical
+
+            for (int x = 0; x < board.GetLength(0); x++)
+            {
+                score = 0;
+                targetLocation = null;
+                for (int y = 0; y < board.GetLength(1); y++)
+                {
+                    if (board[x, y]?.Chess == me)
+                    {
+                        score += 1;
+                    }
+                    if (board[x, y]?.Chess == op)
+                    {
+                        score -= 1;
+                    }
+                    if (board[x, y] == null)
+                    {
+                        targetLocation = new(x, y);
+                    }
+                }
+
+                if (score == 2 || score == -2)
+                {
+                    return new(game.CurrentPlayer, targetLocation);
+                }
+            }
+
+            #endregion Vertical
+
+            #region Horizontal
+
+            for (int y = 0; y < board.GetLength(1); y++)
+            {
+                score = 0;
+                targetLocation = null;
+                for (int x = 0; x < board.GetLength(0); x++)
+                {
+                    if (board[x, y]?.Chess == me)
+                    {
+                        score += 1;
+                    }
+                    if (board[x, y]?.Chess == op)
+                    {
+                        score -= 1;
+                    }
+                    if (board[x, y] == null)
+                    {
+                        targetLocation = new(x, y);
+                    }
+                }
+
+                if (score == 2 || score == -2)
+                {
+                    return new(game.CurrentPlayer, targetLocation);
+                }
+            }
+
+            #endregion Horizontal
+
+            #region Diagonal1
+
+            score = 0;
+            targetLocation = null;
+            for (int x = 0; x < board.GetLength(0); x++)
+            {
+                for (int y = 0; y < board.GetLength(1); y++)
+                {
+                    if (x == y)
+                    {
+                        if (board[x, y]?.Chess == me)
+                        {
+                            score += 1;
+                        }
+                        if (board[x, y]?.Chess == op)
+                        {
+                            score -= 1;
+                        }
+                        if (board[x, y] == null)
+                        {
+                            targetLocation = new(x, y);
+                        }
+                    }
+                }
+            }
+
+            if (score == 2 || score == -2)
+            {
+                return new(game.CurrentPlayer, targetLocation);
+            }
+
+            #endregion Diagonal1
+
+            #region Diagonal2
+
+            score = 0;
+            targetLocation = null;
+            for (int x = 0; x < board.GetLength(0); x++)
+            {
+                for (int y = 0; y < board.GetLength(1); y++)
+                {
+                    if (x == 2 - y)
+                    {
+                        if (board[x, y]?.Chess == me)
+                        {
+                            score += 1;
+                        }
+                        if (board[x, y]?.Chess == op)
+                        {
+                            score -= 1;
+                        }
+                        if (board[x, y] == null)
+                        {
+                            targetLocation = new(x, y);
+                        }
+                    }
+                }
+            }
+
+            if (score == 2 || score == -2)
+            {
+                return new(game.CurrentPlayer, targetLocation);
+            }
+
+            #endregion Diagonal2
+
+            #endregion Check -1
+
+            if (board[1, 1] == null)
+            {
+                return new(game.CurrentPlayer, new(1, 1));
+            }
+
+            List<Location> coners = new();
+            if (board[0, 0] == null) coners.Add(new(0, 0));
+            if (board[0, 2] == null) coners.Add(new(0, 2));
+            if (board[2, 0] == null) coners.Add(new(2, 0));
+            if (board[2, 2] == null) coners.Add(new(2, 2));
+
+            if (coners.Count > 0)
+            {
+                coners.Shuffle(rng);
+                return new(game.CurrentPlayer, coners[0]);
+            }
+
+            List<Location> middles = new();
+            if (board[1, 0] == null) middles.Add(new(1, 0));
+            if (board[0, 1] == null) middles.Add(new(0, 1));
+            if (board[2, 1] == null) middles.Add(new(2, 1));
+            if (board[1, 2] == null) middles.Add(new(1, 2));
+
+            if (middles.Count > 0)
+            {
+                coners.Shuffle(rng);
+                return new(game.CurrentPlayer, middles[0]);
+            }
+
+            throw new NotSupportedException("No result found!");
+        }
+
+        public Move GetNextAIMove(Game game, IChromosome chromosome)
+        {
+            if (game == null)
+            {
+                throw new ArgumentNullException(nameof(game));
+            }
+            if (chromosome == null)
+            {
+                throw new ArgumentNullException(nameof(chromosome));
+            }
+
+            List<Move> availableMoves = game.GetAvailableMoves();
+            Dictionary<Location, Tuple<Move, Gene>> locationMap = new();
+            Dictionary<Location, Gene> genesMap = MapGenesToLocation(chromosome.GetGenes());
+            foreach (var move in availableMoves)
+            {
+                locationMap.Add(move.Location, new(move, genesMap.Where(gene => move.Location.Equals(gene.Key)).First().Value));
+            }
+            Move selectedMove = locationMap.RandomElementByWeight(x => (double)x.Value.Item2.Value).Value.Item1;
+
+            return selectedMove;
         }
     }
 }

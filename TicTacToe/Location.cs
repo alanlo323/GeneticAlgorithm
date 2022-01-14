@@ -19,10 +19,16 @@ namespace TicTacToe
 
         public override bool Equals(object obj)
         {
+            if (obj == null)
+            {
+                return false;
+            }
+
             if (obj is Location target)
             {
                 return target.X == this.X && target.Y == this.Y;
             }
+
             return base.Equals(obj);
         }
 
