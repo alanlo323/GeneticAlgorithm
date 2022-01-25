@@ -120,7 +120,7 @@ namespace GAConsoleApp
             var crossover = new UniformCrossover(0.8f);
             var mutation = new UniformMutation(true);
             var fitness = new CustomFitness(gameEngine);
-            var population = new Population(50, 70, chromosome);
+            var population = new TplPopulation(50, 70, chromosome);
             population.GenerationStrategy = new PerformanceGenerationStrategy();
 
             var ga = new GeneticSharp.Domain.GeneticAlgorithm(population, fitness, selection, crossover, mutation);
@@ -135,11 +135,12 @@ namespace GAConsoleApp
                 }),
                 new TimeEvolvingTermination(TimeSpan.FromSeconds(20)),
             });
-            ga.TaskExecutor = new ParallelTaskExecutor
+            ga.TaskExecutor = new TplTaskExecutor
             {
                 MinThreads = 1,
                 MaxThreads = 100
             };
+            ga.OperatorsStrategy = new TplOperatorsStrategy();
             ga.GenerationRan += (s, e) =>
             {
                 if (DateTime.Now >= lastMsgTime.AddMilliseconds(100))
