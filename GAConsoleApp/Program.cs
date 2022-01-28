@@ -12,6 +12,7 @@ using System.IO;
 using Newtonsoft.Json;
 using GeneticSharp.Domain.Chromosomes;
 using JsonNet.ContractResolvers;
+using System.Threading;
 
 namespace GAConsoleApp
 {
@@ -26,6 +27,10 @@ namespace GAConsoleApp
             string TicTacToeMoveFirstChromosomeFileName = "TicTacToeMoveFirstChromosomeFileName.json";
 
             IGameEngine gameEngine = new TicTacToe.GameEngine(true, simulateRound: 100);
+
+            TicTacToe.GameEngine tttGameEngine = (TicTacToe.GameEngine)gameEngine;
+            Console.WriteLine("Generating all possible board...");
+            var possibleBoards = tttGameEngine.GetAllPossibleBoard();
 
             IChromosome baseChromosome;
             if (File.Exists(TicTacToeMoveFirstChromosomeFileName))

@@ -2,16 +2,20 @@
 using GeneticSharp.Domain.Chromosomes;
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using static TicTacToe.Game;
 
 namespace TicTacToe
 {
     public class GameEngine : IGameEngine
     {
+        public static int _posibleBoardFound = 0;
+        private object _locker = new object();
         private Random rng;
 
         public GameEngine(bool moveFirst, int boardSize = 3, int winningCondition = 3, int simulateRound = 100, int winScore = 15, int tieScore = 5)
@@ -116,6 +120,63 @@ namespace TicTacToe
             //}
         }
 
+        public Dictionary<string, Chess[,]> GetAllPossibleBoard()
+        {
+            Dictionary<string, Chess[,]> allPossibleBoard = new();
+
+            Player[] players = new Player[] { new Player(GAPlayerName, Game.Chess.O), new Player(ComputerPlayerName, Game.Chess.X) };
+
+            int c = 0;
+            while (c < 262144)
+            {
+                bool valid = (c & 3) < 3;
+                valid &= ((c >> 2) & 3) < 3;
+                valid &= ((c >> 4) & 3) < 3;
+                valid &= ((c >> 6) & 3) < 3;
+                valid &= ((c >> 8) & 3) < 3;
+                valid &= ((c >> 10) & 3) < 3;
+                valid &= ((c >> 12) & 3) < 3;
+                valid &= ((c >> 14) & 3) < 3;
+                valid &= ((c >> 16) & 3) < 3;
+
+                if (valid)
+                {
+                    int i = c;
+                    int j = 0;
+                    string hash = string.Empty;
+                    while (j < 9)
+                    {
+                        hash += (i & 3);
+                        i >>= 2;
+                        j++;
+                    }
+
+                    var board = Game.ConvertHashToBoard(hash, BoardSize, players);
+                    var boardRight90Degree = RotateBaordClockwise(board);
+                    var boardRight180Degree = RotateBaordClockwise(boardRight90Degree);
+                    var boardRight270Degree = RotateBaordClockwise(boardRight180Degree);
+
+                    string[] allHashs = new string[] {
+                        hash,
+                        Game.ConvertBoardToHash(boardRight90Degree),
+                        Game.ConvertBoardToHash(boardRight180Degree),
+                        Game.ConvertBoardToHash(boardRight270Degree),
+                    };
+
+                    if (!allHashs.Any(h => allPossibleBoard.ContainsKey(h)))
+                    {
+                        if (Game.IsBoardValid(board, players))
+                        {
+                            allPossibleBoard.Add(hash, board);
+                        }
+                    }
+                }
+
+                c++;
+            }
+            return allPossibleBoard;
+        }
+
         public Move GetHardCodedNextMove(Game game)
         {
             var board = game.Board;
@@ -124,8 +185,8 @@ namespace TicTacToe
 
             #region Check -1
 
-            int score = 0;
-            Location targetLocation = null;
+            int score;
+            Location targetLocation;
 
             #region Vertical
 
@@ -135,15 +196,15 @@ namespace TicTacToe
                 targetLocation = null;
                 for (int y = 0; y < board.GetLength(1); y++)
                 {
-                    if (board[x, y]?.Chess == me)
+                    if (board[x, y] == me)
                     {
                         score += 1;
                     }
-                    if (board[x, y]?.Chess == op)
+                    if (board[x, y] == op)
                     {
                         score -= 1;
                     }
-                    if (board[x, y] == null)
+                    if (board[x, y] == Chess.Empty)
                     {
                         targetLocation = new(x, y);
                     }
@@ -165,15 +226,15 @@ namespace TicTacToe
                 targetLocation = null;
                 for (int x = 0; x < board.GetLength(0); x++)
                 {
-                    if (board[x, y]?.Chess == me)
+                    if (board[x, y] == me)
                     {
                         score += 1;
                     }
-                    if (board[x, y]?.Chess == op)
+                    if (board[x, y] == op)
                     {
                         score -= 1;
                     }
-                    if (board[x, y] == null)
+                    if (board[x, y] == Chess.Empty)
                     {
                         targetLocation = new(x, y);
                     }
@@ -197,15 +258,15 @@ namespace TicTacToe
                 {
                     if (x == y)
                     {
-                        if (board[x, y]?.Chess == me)
+                        if (board[x, y] == me)
                         {
                             score += 1;
                         }
-                        if (board[x, y]?.Chess == op)
+                        if (board[x, y] == op)
                         {
                             score -= 1;
                         }
-                        if (board[x, y] == null)
+                        if (board[x, y] == Chess.Empty)
                         {
                             targetLocation = new(x, y);
                         }
@@ -230,15 +291,15 @@ namespace TicTacToe
                 {
                     if (x == 2 - y)
                     {
-                        if (board[x, y]?.Chess == me)
+                        if (board[x, y] == me)
                         {
                             score += 1;
                         }
-                        if (board[x, y]?.Chess == op)
+                        if (board[x, y] == op)
                         {
                             score -= 1;
                         }
-                        if (board[x, y] == null)
+                        if (board[x, y] == Chess.Empty)
                         {
                             targetLocation = new(x, y);
                         }
@@ -255,16 +316,16 @@ namespace TicTacToe
 
             #endregion Check -1
 
-            if (board[1, 1] == null)
+            if (board[1, 1] == Chess.Empty)
             {
                 return new(game.CurrentPlayer, new(1, 1));
             }
 
             List<Location> coners = new();
-            if (board[0, 0] == null) coners.Add(new(0, 0));
-            if (board[0, 2] == null) coners.Add(new(0, 2));
-            if (board[2, 0] == null) coners.Add(new(2, 0));
-            if (board[2, 2] == null) coners.Add(new(2, 2));
+            if (board[0, 0] == Chess.Empty) coners.Add(new(0, 0));
+            if (board[0, 2] == Chess.Empty) coners.Add(new(0, 2));
+            if (board[2, 0] == Chess.Empty) coners.Add(new(2, 0));
+            if (board[2, 2] == Chess.Empty) coners.Add(new(2, 2));
 
             if (coners.Count > 0)
             {
@@ -273,10 +334,10 @@ namespace TicTacToe
             }
 
             List<Location> middles = new();
-            if (board[1, 0] == null) middles.Add(new(1, 0));
-            if (board[0, 1] == null) middles.Add(new(0, 1));
-            if (board[2, 1] == null) middles.Add(new(2, 1));
-            if (board[1, 2] == null) middles.Add(new(1, 2));
+            if (board[1, 0] == Chess.Empty) middles.Add(new(1, 0));
+            if (board[0, 1] == Chess.Empty) middles.Add(new(0, 1));
+            if (board[2, 1] == Chess.Empty) middles.Add(new(2, 1));
+            if (board[1, 2] == Chess.Empty) middles.Add(new(1, 2));
 
             if (middles.Count > 0)
             {
@@ -308,6 +369,33 @@ namespace TicTacToe
             Move selectedMove = locationMap.RandomElementByWeight(x => (double)x.Value.Item2.Value).Value.Item1;
 
             return selectedMove;
+        }
+
+        private static Chess[,] RotateBaordClockwise(Chess[,] board)
+        {
+            int width;
+            int height;
+            Chess[,] dst;
+
+            width = board.GetUpperBound(0) + 1;
+            height = board.GetUpperBound(1) + 1;
+            dst = new Chess[height, width];
+
+            for (int row = 0; row < height; row++)
+            {
+                for (int col = 0; col < width; col++)
+                {
+                    int newRow;
+                    int newCol;
+
+                    newRow = col;
+                    newCol = height - (row + 1);
+
+                    dst[newCol, newRow] = board[col, row];
+                }
+            }
+
+            return dst;
         }
     }
 }

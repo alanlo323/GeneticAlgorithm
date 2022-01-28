@@ -1,4 +1,5 @@
 ﻿using GeneticSharp.Domain.Chromosomes;
+using System.Collections.Generic;
 
 namespace GeneticAlgorithm.Engine
 {
