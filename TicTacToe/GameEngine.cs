@@ -30,6 +30,21 @@ namespace TicTacToe
             rng = new();
             ComputerPlayerName = "Computer";
             GAPlayerName = "GeneticAlgorithm";
+
+            var possibleBoards = this.GetAllPossibleBoard();
+            var possibleBoardsHashes_MoveFirst = possibleBoards.Select((x, index) => new
+            {
+                Hash = this.GetBoardHash("A", x.Value),
+                GeneIndex = index
+            }).ToList();
+            var count = possibleBoardsHashes_MoveFirst.Count();
+            var possibleBoardsHashes_MoveSecond = possibleBoards.Select((x, index) => new
+            {
+                Hash = this.GetBoardHash("B", x.Value),
+                GeneIndex = index + count
+            }).ToList();
+            BoardHashToGeneDict = possibleBoardsHashes_MoveFirst.Concat(possibleBoardsHashes_MoveSecond).ToDictionary(x => x.Hash, x => x.GeneIndex);
+            BoardGeneToHashDict = BoardHashToGeneDict.ToDictionary(x => x.Value, x => x.Key);
         }
 
         public int BoardSize { get; set; }
@@ -37,11 +52,13 @@ namespace TicTacToe
         public string ComputerPlayerName { get; private set; }
         public GeneticSharp.Domain.GeneticAlgorithm GA { get; set; }
         public string GAPlayerName { get; private set; }
-        public bool MoveFirst { get; private set; }
+        public bool MoveFirst { get; set; }
         public int SimulateRound { get; private set; }
         public int TieScore { get; private set; }
         public int WinningCondition { get; private set; }
         public int WinScore { get; private set; }
+        public Dictionary<string, int> BoardHashToGeneDict { get; set; }
+        public Dictionary<int, string> BoardGeneToHashDict { get; set; }
 
         public static Dictionary<Location, Gene> MapGenesToLocation(Gene[] genes)
         {
@@ -66,15 +83,13 @@ namespace TicTacToe
             int scores = 0;
             Player player1 = MoveFirst ? new(GAPlayerName, Game.Chess.O) : new(ComputerPlayerName, Game.Chess.O);
             Player player2 = MoveFirst ? new(ComputerPlayerName, Game.Chess.X) : new(GAPlayerName, Game.Chess.X);
-            for (int i = 0; i < SimulateRound; i++)
+            Parallel.For(0, SimulateRound, (index, parallelLoopState) =>
             {
+
                 rng = new();
                 Game game = new(BoardSize, WinningCondition, player1, player2);
-                List<Move> availableMoves;
                 while (game.States == Game.GameStates.Playing)
                 {
-                    availableMoves = game.GetAvailableMoves();
-
                     Move move;
                     if (game.CurrentPlayer.Name == GAPlayerName)
                     {
@@ -83,8 +98,8 @@ namespace TicTacToe
                     else if (game.CurrentPlayer.Name == ComputerPlayerName)
                     {
                         //move = availableMoves[rng.Next(0, availableMoves.Count - 1)];
-                        //move = GetNextAIMove(game, ComputerChromosome);
-                        move = GetHardCodedNextMove(game);
+                        move = GetNextAIMove(game, ComputerChromosome);
+                        //move = GetHardCodedNextMove(game);
                     }
                     else
                     {
@@ -105,76 +120,181 @@ namespace TicTacToe
                         scores += TieScore;
                         break;
                 }
-            }
+            });
+
+            //for (int i = 0; i < SimulateRound; i++)
+            //{
+            //    rng = new();
+            //    Game game = new(BoardSize, WinningCondition, player1, player2);
+            //    while (game.States == Game.GameStates.Playing)
+            //    {
+            //        Move move;
+            //        if (game.CurrentPlayer.Name == GAPlayerName)
+            //        {
+            //            move = GetNextAIMove(game, chromosome);
+            //        }
+            //        else if (game.CurrentPlayer.Name == ComputerPlayerName)
+            //        {
+            //            //move = availableMoves[rng.Next(0, availableMoves.Count - 1)];
+            //            //move = GetNextAIMove(game, ComputerChromosome);
+            //            move = GetHardCodedNextMove(game);
+            //        }
+            //        else
+            //        {
+            //            throw new NotImplementedException($"Not support player type PlayerName:{game.CurrentPlayer.Name}");
+            //        }
+            //        game.PlaceMovement(move);
+            //    }
+            //    switch (game.States)
+            //    {
+            //        case Game.GameStates.Win:
+            //            if (game.WinPlayer.Name == GAPlayerName)
+            //            {
+            //                scores += WinScore;
+            //            }
+            //            break;
+
+            //        case Game.GameStates.Tie:
+            //            scores += TieScore;
+            //            break;
+            //    }
+            //}
 
             double fitness = (double)scores / WinScore / SimulateRound;
+            if (fitness >= 0.33)
+            {
+                // debug
+                if (true)
+                {
+                    for (int i = 0; i < 10; i++)
+                    {
+                        rng = new();
+                        Game game = new(BoardSize, WinningCondition, player1, player2);
+                        while (game.States == Game.GameStates.Playing)
+                        {
+                            Move move;
+                            if (game.CurrentPlayer.Name == GAPlayerName)
+                            {
+                                move = GetNextAIMove(game, chromosome);
+                            }
+                            else if (game.CurrentPlayer.Name == ComputerPlayerName)
+                            {
+                                //move = availableMoves[rng.Next(0, availableMoves.Count - 1)];
+                                move = GetNextAIMove(game, ComputerChromosome);
+                                //move = GetHardCodedNextMove(game);
+                            }
+                            else
+                            {
+                                throw new NotImplementedException($"Not support player type PlayerName:{game.CurrentPlayer.Name}");
+                            }
+                            game.PlaceMovement(move);
+                        }
+                        switch (game.States)
+                        {
+                            case Game.GameStates.Win:
+                                if (game.WinPlayer.Name == GAPlayerName)
+                                {
+                                    //scores += WinScore;
+                                }
+                                break;
+
+                            case Game.GameStates.Tie:
+                                //scores += TieScore;
+                                break;
+                        }
+                    }
+                }
+            }
             return fitness;
         }
 
         public Gene GenerateGene(int geneIndex)
         {
-            return new Gene(rng.NextDouble());
+            return new Gene(new CustomGeneValue()
+            {
+                Hash = this.GetGenesHashByIndex(geneIndex, BoardGeneToHashDict),
+                Weight = rng.NextDouble()
+            });
             //if (geneIndex < BoardSize)
             //{
             //    GenerateGene(geneIndex + 1);
             //}
         }
 
+        public List<string> GetAllBoard(int square_num, int[] square, List<string> results)
+        {
+
+            if (square_num == Math.Pow(BoardSize, 2))
+            {
+                string boardHash = string.Empty;
+                square.ToList().ForEach(x => boardHash += x);
+                results.Add(boardHash);
+                return results;
+            }
+
+            for (int i = 0; i < BoardSize; i++)
+            {
+                square[square_num] = i;
+                GetAllBoard(square_num + 1, square, results);
+            }
+
+            return results;
+        }
+
         public Dictionary<string, Chess[,]> GetAllPossibleBoard()
         {
-            Dictionary<string, Chess[,]> allPossibleBoard = new();
-
+            var allBoard = GetAllBoard(0, new int[9], new());
             Player[] players = new Player[] { new Player(GAPlayerName, Game.Chess.O), new Player(ComputerPlayerName, Game.Chess.X) };
-
-            int c = 0;
-            while (c < 262144)
+            Dictionary<string, Chess[,]> allPossibleBoard = new();
+            foreach (var hash in allBoard)
             {
-                bool valid = (c & 3) < 3;
-                valid &= ((c >> 2) & 3) < 3;
-                valid &= ((c >> 4) & 3) < 3;
-                valid &= ((c >> 6) & 3) < 3;
-                valid &= ((c >> 8) & 3) < 3;
-                valid &= ((c >> 10) & 3) < 3;
-                valid &= ((c >> 12) & 3) < 3;
-                valid &= ((c >> 14) & 3) < 3;
-                valid &= ((c >> 16) & 3) < 3;
+                var board = Game.ConvertHashToBoard(hash, BoardSize, players);
+                var boardRight90Degree = RotateBaordClockwise(board);
+                var boardRight180Degree = RotateBaordClockwise(boardRight90Degree);
+                var boardRight270Degree = RotateBaordClockwise(boardRight180Degree);
 
-                if (valid)
-                {
-                    int i = c;
-                    int j = 0;
-                    string hash = string.Empty;
-                    while (j < 9)
-                    {
-                        hash += (i & 3);
-                        i >>= 2;
-                        j++;
-                    }
-
-                    var board = Game.ConvertHashToBoard(hash, BoardSize, players);
-                    var boardRight90Degree = RotateBaordClockwise(board);
-                    var boardRight180Degree = RotateBaordClockwise(boardRight90Degree);
-                    var boardRight270Degree = RotateBaordClockwise(boardRight180Degree);
-
-                    string[] allHashs = new string[] {
+                string[] allHashs = new string[] {
                         hash,
                         Game.ConvertBoardToHash(boardRight90Degree),
                         Game.ConvertBoardToHash(boardRight180Degree),
                         Game.ConvertBoardToHash(boardRight270Degree),
                     };
 
-                    if (!allHashs.Any(h => allPossibleBoard.ContainsKey(h)))
+                if (!allHashs.Any(h => allPossibleBoard.ContainsKey(h)))
+                {
+                    if (Game.IsBoardValid(board, players))
                     {
-                        if (Game.IsBoardValid(board, players))
-                        {
-                            allPossibleBoard.Add(hash, board);
-                        }
+                        allPossibleBoard.Add(hash, board);
                     }
                 }
-
-                c++;
             }
+
             return allPossibleBoard;
+        }
+
+        public string GetBoardHash(string prefix, Chess[,] board)
+        {
+            string hash = string.Empty;
+            for (int y = 0; y < board.GetLength(1); y++)
+            {
+                for (int x = 0; x < board.GetLength(0); x++)
+                {
+                    switch (board[x, y])
+                    {
+                        case Chess.O:
+                            hash += "1";
+                            break;
+                        case Chess.X:
+                            hash += "2";
+                            break;
+                        default:
+                            hash += "0";
+                            break;
+                    }
+                }
+            }
+
+            return $@"{prefix}{hash}";
         }
 
         public Move GetHardCodedNextMove(Game game)
@@ -359,16 +479,84 @@ namespace TicTacToe
                 throw new ArgumentNullException(nameof(chromosome));
             }
 
+            //  Get pobility from availableMovesHashes
+
+
             List<Move> availableMoves = game.GetAvailableMoves();
-            Dictionary<Location, Tuple<Move, Gene>> locationMap = new();
-            Dictionary<Location, Gene> genesMap = MapGenesToLocation(chromosome.GetGenes());
-            foreach (var move in availableMoves)
-            {
-                locationMap.Add(move.Location, new(move, genesMap.Where(gene => move.Location.Equals(gene.Key)).First().Value));
-            }
-            Move selectedMove = locationMap.RandomElementByWeight(x => (double)x.Value.Item2.Value).Value.Item1;
+            var previewMovedBoards = game.PreviewMoves(availableMoves);
+            var options = previewMovedBoards
+                .Select(x => new
+                {
+                    Move = x.Key,
+                    Hash = this.GetBoardHash(MoveFirst ? "A" : "B", x.Value),
+                })
+                .Select(x => new
+                {
+                    x.Move,
+                    x.Hash,
+                    GenesIndex = GetGenesIndexByHash(x.Hash, BoardHashToGeneDict),
+                })
+                .Select(x => new
+                {
+                    x.Move,
+                    x.Hash,
+                    x.GenesIndex,
+                    Gene = chromosome.GetGene(x.GenesIndex),
+                });
+            Move selectedMove = options.RandomElementByWeight(x => ((CustomGeneValue)x.Gene.Value).Weight).Move;
 
             return selectedMove;
+        }
+
+        private string GetGenesHashByIndex(int index, Dictionary<int, string> dict)
+        {
+            if (!dict.ContainsKey(index))
+            {
+                throw new ArgumentOutOfRangeException("index", $@"{index} is not in all possible board");
+            }
+
+            return dict[index];
+        }
+
+        private int GetGenesIndexByHash(string hash, Dictionary<string, int> dict)
+        {
+            var realHash = hash;
+            var hashPrefix = string.Empty;
+            if (char.IsLetter(hash[0]))
+            {
+                realHash = hash.Substring(1);
+                hashPrefix = hash[0].ToString();
+            }
+            Player[] players = new Player[] { new Player(GAPlayerName, Game.Chess.O), new Player(ComputerPlayerName, Game.Chess.X) };
+            var board = Game.ConvertHashToBoard(realHash, BoardSize, players);
+            var boardRight90Degree = RotateBaordClockwise(board);
+            var boardRight180Degree = RotateBaordClockwise(boardRight90Degree);
+            var boardRight270Degree = RotateBaordClockwise(boardRight180Degree);
+            var hashRight90Degree = $@"{hashPrefix}{Game.ConvertBoardToHash(boardRight90Degree)}";
+            var hashRight180Degree = $@"{hashPrefix}{Game.ConvertBoardToHash(boardRight180Degree)}";
+            var hashRight270Degree = $@"{hashPrefix}{Game.ConvertBoardToHash(boardRight270Degree)}";
+            if (dict.ContainsKey(hash))
+            {
+                return dict[hash];
+            }
+            else if (dict.ContainsKey(hashRight90Degree))
+            {
+                return dict[hashRight90Degree];
+            }
+            else if (dict.ContainsKey(hashRight180Degree))
+            {
+                return dict[hashRight180Degree];
+            }
+            else if (dict.ContainsKey(hashRight270Degree))
+            {
+                return dict[hashRight270Degree];
+            }
+            else
+            {
+                var a = dict.Where(x => x.Key.StartsWith("A")).ToList();
+                var b = dict.Where(x => x.Key.StartsWith("B")).ToList();
+                throw new ArgumentOutOfRangeException("hash", $@"{hash} is not in all possible board");
+            }
         }
 
         private static Chess[,] RotateBaordClockwise(Chess[,] board)

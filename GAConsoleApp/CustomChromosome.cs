@@ -23,9 +23,17 @@ namespace GAConsoleApp
             CreateGenes();
         }
 
+        public CustomChromosome(in IGeneable reference, int genesCount)
+            : base(genesCount)
+        {
+            GenesCount = genesCount;
+            this.Reference = reference;
+            CreateGenes();
+        }
+
         public Gene[] Genes { get => GetGenes(); set => ReplaceGenes(0, value); }
 
-        public static int GenesCount { get; } = 9;
+        public static int GenesCount { get; set; } = 4416;
 
         [JsonIgnore]
         public IGeneable Reference { get; set; }
@@ -36,7 +44,7 @@ namespace GAConsoleApp
             Gene[] genes = GetGenes();
             if (genes == null || genes.Length == 0 || genes.All(x => x.Value == null))
             {
-                return new CustomChromosome(in reference);
+                return new CustomChromosome(in reference, GenesCount);
             }
             return new CustomChromosome(Genes, in reference);
         }

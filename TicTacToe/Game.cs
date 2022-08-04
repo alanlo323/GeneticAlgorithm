@@ -1,4 +1,5 @@
-﻿using GeneticSharp.Domain.Chromosomes;
+﻿using GeneticAlgorithm.Engine;
+using GeneticSharp.Domain.Chromosomes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
@@ -51,6 +52,29 @@ namespace TicTacToe
         [JsonProperty("Board", ItemConverterType = typeof(StringEnumConverter))]
         public Chess[,] Board { get; private set; }
 
+        public string BoardLayout
+        {
+            get
+            {
+                string result = string.Empty;
+                for (int y = 0; y < Board.GetLength(1); y++)
+                {
+                    for (int x = 0; x < Board.GetLength(0); x++)
+                    {
+                        result += Board[x, y] switch
+                        {
+                            Chess.O => "[O]",
+                            Chess.X => "[X]",
+                            _ => "[ ]",
+                        };
+                        //result += $@"[{x},{y}]";
+                    }
+                    result += Environment.NewLine;
+                }
+                return result;
+            }
+        }
+
         public Player CurrentPlayer { get; private set; }
 
         public List<Move> MoveHistory { get; private set; }
@@ -78,13 +102,18 @@ namespace TicTacToe
 
         public static Chess[,] ConvertHashToBoard(string hash, int boardSize, Player[] players)
         {
+            var realHash = hash;
+            if (char.IsLetter(hash[0]))
+            {
+                realHash = hash.Substring(1);
+            }
             Chess[,] board = new Chess[boardSize, boardSize];
-            for (int i = 0; i < hash.Length; i++)
+            for (int i = 0; i < realHash.Length; i++)
             {
                 int x = i % 3;
                 int y = i / 3;
 
-                int playerIndex = int.Parse(hash[i].ToString()) - 1;
+                int playerIndex = int.Parse(realHash[i].ToString()) - 1;
                 if (playerIndex >= 0)
                 {
                     board[x, y] = players[playerIndex].Chess;
@@ -97,9 +126,9 @@ namespace TicTacToe
         public static bool IsBoardValid(Chess[,] board, Player[] players)
         {
             int[] chessCount = new int[players.Length];
-            for (int x = 0; x < board.GetLength(0); x++)
+            for (int y = 0; y < board.GetLength(1); y++)
             {
-                for (int y = 0; y < board.GetLength(1); y++)
+                for (int x = 0; x < board.GetLength(0); x++)
                 {
                     for (int i = 0; i < players.Length; i++)
                     {
@@ -180,9 +209,9 @@ namespace TicTacToe
         public List<Move> GetAvailableMoves()
         {
             List<Move> availableMoves = new List<Move>();
-            for (int x = 0; x < Board.GetLength(0); x++)
+            for (int y = 0; y < Board.GetLength(1); y++)
             {
-                for (int y = 0; y < Board.GetLength(1); y++)
+                for (int x = 0; x < Board.GetLength(0); x++)
                 {
                     Location location = new Location(x, y);
                     if (IsLocationAvailable(location))
@@ -192,6 +221,19 @@ namespace TicTacToe
                 }
             }
             return availableMoves;
+        }
+
+        public Dictionary<Move, Chess[,]> PreviewMoves(List<Move> moves)
+        {
+            Dictionary<Move, Chess[,]> results = new Dictionary<Move, Chess[,]>();
+            foreach (var move in moves)
+            {
+                Chess[,] boardClone = (Chess[,])this.Board.Clone();
+                boardClone[move.Location.X, move.Location.Y] = CurrentPlayer.Chess;
+                results.Add(move, boardClone);
+            }
+
+            return results;
         }
 
         public Player GetNextPlayer()

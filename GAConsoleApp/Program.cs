@@ -13,6 +13,7 @@ using Newtonsoft.Json;
 using GeneticSharp.Domain.Chromosomes;
 using JsonNet.ContractResolvers;
 using System.Threading;
+using System.Linq;
 
 namespace GAConsoleApp
 {
@@ -24,21 +25,21 @@ namespace GAConsoleApp
         /// </summary>
         public static void Main(string[] args)
         {
-            string TicTacToeMoveFirstChromosomeFileName = "TicTacToeMoveFirstChromosomeFileName.json";
+            string TicTacToeMoveFirstChromosomeFileName = "TicTacToeChromosome.json";
 
-            IGameEngine gameEngine = new TicTacToe.GameEngine(true, simulateRound: 100);
-
-            TicTacToe.GameEngine tttGameEngine = (TicTacToe.GameEngine)gameEngine;
+            TicTacToe.GameEngine gameEngine = new TicTacToe.GameEngine(true, simulateRound: 100);
             Console.WriteLine("Generating all possible board...");
-            var possibleBoards = tttGameEngine.GetAllPossibleBoard();
 
             IChromosome baseChromosome;
             if (File.Exists(TicTacToeMoveFirstChromosomeFileName))
             {
                 Console.Write("Loading model from file...");
-                var settings = new JsonSerializerSettings
+                var settings = new Newtonsoft.Json.JsonSerializerSettings { TypeNameHandling = Newtonsoft.Json.TypeNameHandling.Auto };
+
+                var seserializeSettings = new JsonSerializerSettings
                 {
-                    ContractResolver = new PrivateSetterContractResolver()
+                    ContractResolver = new PrivateSetterContractResolver(),
+                    TypeNameHandling = Newtonsoft.Json.TypeNameHandling.Auto,
                 };
                 baseChromosome = JsonConvert.DeserializeObject<CustomChromosome>(File.ReadAllText(TicTacToeMoveFirstChromosomeFileName), settings);
                 if (baseChromosome is CustomChromosome customChromosome)
@@ -52,7 +53,7 @@ namespace GAConsoleApp
             }
             else
             {
-                baseChromosome = new CustomChromosome(gameEngine);
+                baseChromosome = new CustomChromosome(gameEngine, gameEngine.BoardHashToGeneDict.Count);
 
                 gameEngine.ComputerChromosome = baseChromosome.Clone();
                 Gene[] emptyGenes = new Gene[gameEngine.ComputerChromosome.Length];
@@ -67,13 +68,15 @@ namespace GAConsoleApp
             Console.WriteLine("GA running...");
             GeneticSharp.Domain.GeneticAlgorithm ga = null;
             IChromosome chromosome = baseChromosome; ;
-            for (int i = 1; i <= 6; i++)
+            int round = 6;
+            for (int i = 1; i <= round; i++)
             {
                 Console.WriteLine($"Round {i}");
                 if (ga?.BestChromosome != null)
                 {
                     gameEngine.ComputerChromosome = ga.BestChromosome;
                     chromosome = ga.BestChromosome;
+                    gameEngine.MoveFirst = !gameEngine.MoveFirst;
                 }
 
                 ga = Train(gameEngine, chromosome);
@@ -83,7 +86,8 @@ namespace GAConsoleApp
                 Console.WriteLine($"Elapsed time: {ga.TimeEvolving}");
             }
 
-            File.WriteAllText(TicTacToeMoveFirstChromosomeFileName, JsonConvert.SerializeObject(ga.BestChromosome));
+            var serializerSettings = new Newtonsoft.Json.JsonSerializerSettings { TypeNameHandling = Newtonsoft.Json.TypeNameHandling.Auto };
+            File.WriteAllText(TicTacToeMoveFirstChromosomeFileName, JsonConvert.SerializeObject(ga.BestChromosome, serializerSettings));
             Console.WriteLine($"Saved best solution to {TicTacToeMoveFirstChromosomeFileName}");
             Console.ReadKey();
         }
@@ -136,7 +140,7 @@ namespace GAConsoleApp
                 new AndTermination(new  ITermination[]
                 {
                     new FitnessThresholdTermination(1f),
-                new FitnessStagnationTermination(100),
+                    new FitnessStagnationTermination(100),
                 }),
                 new TimeEvolvingTermination(TimeSpan.FromSeconds(20)),
             });
