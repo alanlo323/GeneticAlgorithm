@@ -98,8 +98,8 @@ namespace TicTacToe
                     else if (game.CurrentPlayer.Name == ComputerPlayerName)
                     {
                         //move = availableMoves[rng.Next(0, availableMoves.Count - 1)];
-                        move = GetNextAIMove(game, ComputerChromosome);
-                        //move = GetHardCodedNextMove(game);
+                        //move = GetNextAIMove(game, ComputerChromosome);
+                        move = GetHardCodedNextMove(game);
                     }
                     else
                     {
@@ -180,8 +180,8 @@ namespace TicTacToe
                             else if (game.CurrentPlayer.Name == ComputerPlayerName)
                             {
                                 //move = availableMoves[rng.Next(0, availableMoves.Count - 1)];
-                                move = GetNextAIMove(game, ComputerChromosome);
-                                //move = GetHardCodedNextMove(game);
+                                //move = GetNextAIMove(game, ComputerChromosome);
+                                move = GetHardCodedNextMove(game);
                             }
                             else
                             {
@@ -508,7 +508,7 @@ namespace TicTacToe
             return selectedMove;
         }
 
-        private string GetGenesHashByIndex(int index, Dictionary<int, string> dict)
+        public string GetGenesHashByIndex(int index, Dictionary<int, string> dict)
         {
             if (!dict.ContainsKey(index))
             {

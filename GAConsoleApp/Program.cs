@@ -27,7 +27,7 @@ namespace GAConsoleApp
         {
             string TicTacToeMoveFirstChromosomeFileName = "TicTacToeChromosome.json";
 
-            TicTacToe.GameEngine gameEngine = new TicTacToe.GameEngine(true, simulateRound: 100);
+            TicTacToe.GameEngine gameEngine = new TicTacToe.GameEngine(false, simulateRound: 100);
             Console.WriteLine("Generating all possible board...");
 
             IChromosome baseChromosome;
@@ -60,7 +60,11 @@ namespace GAConsoleApp
 
                 for (int i = 0; i < emptyGenes.Length; i++)
                 {
-                    emptyGenes[i] = new Gene((double)0);
+                    emptyGenes[i] = new Gene(new TicTacToe.CustomGeneValue()
+                    {
+                        Hash = gameEngine.GetGenesHashByIndex(i, gameEngine.BoardGeneToHashDict),
+                        Weight = 0
+                    });
                 }
                 gameEngine.ComputerChromosome.ReplaceGenes(0, emptyGenes);
             }
@@ -76,7 +80,7 @@ namespace GAConsoleApp
                 {
                     gameEngine.ComputerChromosome = ga.BestChromosome;
                     chromosome = ga.BestChromosome;
-                    gameEngine.MoveFirst = !gameEngine.MoveFirst;
+                    //gameEngine.MoveFirst = !gameEngine.MoveFirst;
                 }
 
                 ga = Train(gameEngine, chromosome);
